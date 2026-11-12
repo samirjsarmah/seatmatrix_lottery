@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Traveller seat lottery</title>
+<style>
+:root{--bg:#f3f5f2;--card:#fff;--ink:#1d2b26;--mute:#66746e;--line:#d5ddd8;--win:#2f7d6d;--winbg:#d8eee8;--aisle:#c9d3ce;--drv:#3b4a55;--gold:#c98a14;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141b18;--card:#1d2723;--ink:#e6efeb;--mute:#97a7a0;--line:#33423c;--win:#5fc4ae;--winbg:#21433b;--aisle:#2c3a35;--drv:#4a5b67;--gold:#e8b23d}}
+:root[data-theme="dark"]{--bg:#141b18;--card:#1d2723;--ink:#e6efeb;--mute:#97a7a0;--line:#33423c;--win:#5fc4ae;--winbg:#21433b;--aisle:#2c3a35;--drv:#4a5b67;--gold:#e8b23d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:24px;margin:0 0 4px}
+h2{font-size:16px;margin:0 0 10px}
+p.sub{margin:0 0 18px;color:var(--mute);max-width:62ch}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:820px){.grid{grid-template-columns:300px 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+textarea,select,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;width:100%}
+textarea{height:300px;resize:vertical}
+select{margin:8px 0}
+button{cursor:pointer;background:var(--win);color:#fff;border-color:var(--win);font-weight:600;width:auto}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--win);outline-offset:2px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ball{display:flex;align-items:center;gap:14px;margin-bottom:12px;min-height:76px}
+.orb{width:68px;height:68px;border-radius:50%;background:var(--gold);color:#1d1400;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;flex:none;border:3px solid var(--ink)}
+.orb.spin{animation:wob .12s infinite alternate}
+@keyframes wob{to{transform:translateY(-4px) rotate(8deg)}}
+@media(prefers-reduced-motion:reduce){.orb.spin{animation:none}}
+.who{font-size:18px;font-weight:700}
+.who small{display:block;font-size:13px;font-weight:400;color:var(--mute)}
+.van{border:2px solid var(--line);border-radius:70px 14px 14px 70px;padding:12px 12px 12px 20px;background:var(--bg)}
+.hm{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.seat{border-radius:8px;padding:4px;text-align:center;min-height:58px;font-size:12px;border:2px solid var(--aisle);background:var(--aisle);display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.seat b{font-size:13px;display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.seat small{color:var(--mute);font-size:11px}
+.seat .n{font-size:20px;font-weight:700}
+.seat.w{background:var(--winbg);border-color:var(--win)}
+.seat.d{background:var(--drv);border-color:var(--drv);color:#fff}
+.seat.hit{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.aisle{grid-column:1/-1;border-top:2px dashed var(--line);font-size:11px;color:var(--mute);text-align:center;height:16px;line-height:20px}
+.door{font-size:12px;color:var(--mute);display:flex;align-items:center;justify-content:center;border:2px dashed var(--line);border-radius:8px;min-height:30px}
+.legend{font-size:12px;color:var(--mute);margin-top:8px;text-align:center}
+table{border-collapse:collapse;font-size:13px;width:100%;margin-top:14px}
+th,td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left}
+td.w{color:var(--win);font-weight:700}
+.msg{font-size:13px;color:var(--mute);margin-top:8px}
+</style></head><body><main>
+<h1>Traveller seat lottery</h1>
+<p class="sub">Type one name per line (up to 16). Start the lottery, then draw each passenger one by one. Seats 1 to 16 are drawn with a secure random number, and the fair mode gives better odds of a window to people who have had fewer windows.</p>
+<div class="grid">
+<section class="card"><h2>Passengers</h2>
+<textarea id="names" aria-label="Passenger names"></textarea>
+<select id="mode" aria-label="Lottery mode"><option value="fair">Fair window lottery</option><option value="pure">Pure random lottery</option></select>
+<div class="btns"><button id="start">Start lottery</button></div>
+<div class="msg" id="msg"></div></section>
+<section class="card"><h2 id="ttl">Draw</h2>
+<div class="ball"><div class="orb" id="orb">?</div><div class="who" id="who">Press Start lottery<small>Then draw next to pick a seat</small></div></div>
+<div class="van"><div id="map"></div></div>
+<div class="legend">Front on the left. Green = window seat, grey = aisle seat. Seat 1 is next to the door.</div>
+<div class="btns"><button id="next" disabled>Draw next</button><button class="ghost" id="all" disabled>Reveal all</button><button class="ghost" id="save" disabled>Save trip for fairness</button></div>
+<div id="tab"></div></section></div>
+</main>
+<script>
+var W=[1,2,4,5,7,8,10,11,13,14,16],A=[3,6,9,12,15];
+var names=[],res={},order=[],step=0,wins={},trips=0,busy=false;
+var $=function(i){return document.getElementById(i)};
+function rnd(){var a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296}
+function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+var def=[];for(var k=1;k<=16;k++)def.push("Passenger "+k);$("names").value=def.join("\n");
+function start(){
+ names=$("names").value.split("\n").map(function(s){return s.trim()}).filter(Boolean).slice(0,16);
+ if(!names.length){$("msg").textContent="Add at least one name.";return}
+ var fair=$("mode").value=="fair",n=names.length,wn=Math.min(n,W.length);
+ var mx=0;names.forEach(function(x){mx=Math.max(mx,wins[x]||0)});
+ var pool=names.map(function(x,i){return i}),winG=[];
+ while(winG.length<wn){
+  var wts=pool.map(function(i){return fair?1+mx-(wins[names[i]]||0):1}),tot=wts.reduce(function(a,b){return a+b},0),r=rnd()*tot,k=0;
+  while(k<pool.length-1&&r>=wts[k]){r-=wts[k];k++}
+  winG.push(pool.splice(k,1)[0])}
+ res={};var ws=shuf(W),as=shuf(A);
+ winG.forEach(function(i,j){res[i]=ws[j]});pool.forEach(function(i,j){res[i]=as[j]});
+ order=shuf(names.map(function(x,i){return i}));step=0;
+ $("ttl").textContent="Draw (trip "+(trips+1)+")";$("orb").textContent="?";$("who").innerHTML="Ready<small>"+n+" passengers, "+(fair?"fair":"pure random")+" mode</small>";
+ $("msg").textContent=n>16?"Only the first 16 names are used.":"";
+ $("next").disabled=false;$("all").disabled=false;$("save").disabled=true;render(-1)}
+function next(){
+ if(busy||step>=order.length)return;busy=true;$("next").disabled=true;
+ var i=order[step],orb=$("orb"),t=0;orb.classList.add("spin");$("who").innerHTML=esc(names[i])+"<small>drawing...</small>";
+ var iv=setInterval(function(){orb.textContent=Math.floor(rnd()*16)+1;t+=70;
+  if(t>=840){clearInterval(iv);orb.classList.remove("spin");orb.textContent=res[i];step++;busy=false;
+   var w=W.indexOf(res[i])>=0;$("who").innerHTML=esc(names[i])+"<small>Seat "+res[i]+", "+(w?"window":"aisle")+"</small>";render(i);}},70)}
+function all(){if(busy)return;step=order.length;$("orb").textContent="✓";$("who").innerHTML="All seats drawn<small>Check the list below</small>";render(-1)}
+function seatOwner(){var o={};for(var s=0;s<step;s++){var i=order[s];o[res[i]]=i}return o}
+function cell(id,own,hit){var w=W.indexOf(id)>=0,i=own[id];
+ return'<div class="seat'+(w?" w":"")+(i!==undefined&&i===hit?" hit":"")+'">'+(i!==undefined?'<small>'+id+'</small><b>'+esc(names[i])+'</b>':'<span class="n">'+id+'</span>')+'</div>'}
+function render(hit){
+ var own=seatOwner(),h='<div class="hm"><div class="seat d"><b>Driver</b></div>',r;
+ for(r=1;r<=5;r++)h+=cell(3*r+1,own,hit);h+='<span></span>';
+ for(r=1;r<=5;r++)h+=cell(3*r,own,hit);
+ h+='<div class="aisle">aisle</div>'+cell(1,own,hit);
+ for(r=1;r<=5;r++)h+=cell(3*r-1,own,hit);
+ h+='<div class="door">Door</div></div>';$("map").innerHTML=h;
+ var done=order.length&&step>=order.length;$("next").disabled=busy||!order.length||done;$("all").disabled=busy||!order.length||done;$("save").disabled=!done;
+ if(done){var rows=names.map(function(x,i){return i}).sort(function(a,b){return res[a]-res[b]});
+  var t='<table><tr><th>Seat</th><th>Type</th><th>Passenger</th><th>Window rides</th></tr>';
+  rows.forEach(function(i){var w=W.indexOf(res[i])>=0;t+='<tr><td>'+res[i]+'</td><td class='+(w?'w':'a')+'>'+(w?'Window':'Aisle')+'</td><td>'+esc(names[i])+'</td><td>'+(wins[names[i]]||0)+'/'+trips+'</td></tr>'});
+  $("tab").innerHTML=t+'</table>'}else $("tab").innerHTML=""}
+function save(){names.forEach(function(x,i){if(W.indexOf(res[i])>=0)wins[x]=(wins[x]||0)+1});trips++;$("save").disabled=true;
+ $("msg").textContent="Trip "+trips+" saved. Next lottery gives people without a window better odds.";render(-1)}
+$("start").onclick=start;$("next").onclick=next;$("all").onclick=all;$("save").onclick=save;
+render(-1);
+</script></body></html>
